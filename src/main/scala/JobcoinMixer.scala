@@ -12,11 +12,9 @@ object JobcoinMixer {
   object CompletedException extends Exception
 
   def main(args: Array[String]): Unit = {
-    // Create an actor system
     implicit val actorSystem = ActorSystem()
     implicit val materializer = ActorMaterializer()
 
-    // Load Config
     val config = ConfigFactory.load()
 
     // Test HTTP client

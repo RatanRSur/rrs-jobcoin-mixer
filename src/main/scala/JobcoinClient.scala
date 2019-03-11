@@ -22,9 +22,6 @@ class JobcoinClient(config: Config)(implicit materializer: Materializer) {
   private val wsClient = StandaloneAhcWSClient()
   private val apiAddressesUrl = config.getString("jobcoin.apiAddressesUrl")
 
-  // Docs:
-  // https://github.com/playframework/play-ws
-  // https://www.playframework.com/documentation/2.6.x/ScalaJsonCombinators
   def testGet(): Future[AddressesResponse] = async {
     val response = await {
       wsClient
