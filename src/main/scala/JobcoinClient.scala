@@ -16,7 +16,7 @@ import scala.concurrent.Future
 import DefaultBodyReadables._
 import scala.concurrent.ExecutionContext.Implicits._
 
-import JobcoinClient.PlaceholderResponse
+import JobcoinClient.AddressesResponse
 
 class JobcoinClient(config: Config)(implicit materializer: Materializer) {
   private val wsClient = StandaloneAhcWSClient()
@@ -25,23 +25,27 @@ class JobcoinClient(config: Config)(implicit materializer: Materializer) {
   // Docs:
   // https://github.com/playframework/play-ws
   // https://www.playframework.com/documentation/2.6.x/ScalaJsonCombinators
-  def testGet(): Future[PlaceholderResponse] = async {
+  def testGet(): Future[AddressesResponse] = async {
     val response = await {
       wsClient
-        .url("https://jsonplaceholder.typicode.com/posts/1")
+        .url(apiAddressesUrl + "/Alice")
         .get()
     }
 
     response
       .body[JsValue]
-      .validate[PlaceholderResponse]
+      .validate[AddressesResponse]
       .get
   }
 }
 
 object JobcoinClient {
-  case class PlaceholderResponse(userId: Int, id: Int, title: String, body: String)
-  object PlaceholderResponse {
-    implicit val jsonReads: Reads[PlaceholderResponse] = Json.reads[PlaceholderResponse]
+  case class AddressesResponse(balance: String, transactions: Array[Transaction])
+  case class Transaction(timestamp: String, fromAddress: Option[String], toAddress: String, amount: String)
+  object AddressesResponse {
+    implicit val jsonReads: Reads[AddressesResponse] = Json.reads[AddressesResponse]
+  }
+  object Transaction {
+    implicit val jsonReads: Reads[Transaction] = Json.reads[Transaction]
   }
 }

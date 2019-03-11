@@ -9,7 +9,7 @@ import akka.stream.ActorMaterializer
 import scala.concurrent.ExecutionContext.Implicits._
 
 object JobcoinMixer {
-  object CompletedException extends Exception { }
+  object CompletedException extends Exception
 
   def main(args: Array[String]): Unit = {
     // Create an actor system
@@ -20,8 +20,8 @@ object JobcoinMixer {
     val config = ConfigFactory.load()
 
     // Test HTTP client
-    // val client = new JobcoinClient(config)
-    // client.testGet().map(response => println(s"Response:\n$response"))
+     val client = new JobcoinClient(config)
+     client.testGet().map(response => println(s"Response:\n$response"))
 
     try {
       while (true) {
