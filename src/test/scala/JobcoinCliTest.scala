@@ -4,21 +4,21 @@ import org.scalatest._
 import java.io.{ByteArrayOutputStream, ByteArrayInputStream}
 import java.nio.charset.StandardCharsets
 
-class MixerTests extends FlatSpec with Matchers {
+class CliTests extends FlatSpec with Matchers {
   "Main method" should "print the help text when no args are given" in {
     val inputText = "\nquit\n"
     val inputStream = new ByteArrayInputStream(inputText.getBytes(StandardCharsets.UTF_8))
     val outCapture = new ByteArrayOutputStream
     Console.withIn(inputStream) {
       Console.withOut(outCapture) {
-        JobcoinMixer.main(Array[String]())
+        JobcoinCli.main(Array[String]())
       }
     }
 
-    val expectedOutput = s"""${JobcoinMixer.prompt}
+    val expectedOutput = s"""${JobcoinCli.prompt}
     |You must specify empty addresses to mix into!
-    |${JobcoinMixer.helpText}
-    |${JobcoinMixer.prompt}
+    |${JobcoinCli.helpText}
+    |${JobcoinCli.prompt}
     |Quitting...
     |""".stripMargin
 
@@ -31,7 +31,7 @@ class MixerTests extends FlatSpec with Matchers {
     val outCapture = new ByteArrayOutputStream
     Console.withIn(inputStream) {
       Console.withOut(outCapture) {
-        JobcoinMixer.main(Array[String]("test1", "test2"))
+        JobcoinCli.main(Array[String]("test1", "test2"))
       }
     }
 

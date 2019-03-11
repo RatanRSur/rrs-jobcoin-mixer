@@ -4,11 +4,12 @@ import java.util.UUID
 
 import scala.io.StdIn
 import com.typesafe.config.ConfigFactory
-import akka.actor.ActorSystem
+import akka.actor._
 import akka.stream.ActorMaterializer
 import scala.concurrent.ExecutionContext.Implicits._
 
-object JobcoinMixer {
+object JobcoinCli {
+  import MixerActor.AccountAssociation
   object CompletedException extends Exception
 
   def main(args: Array[String]): Unit = {
@@ -16,10 +17,8 @@ object JobcoinMixer {
     implicit val materializer = ActorMaterializer()
 
     val config = ConfigFactory.load()
-
-    // Test HTTP client
-     val client = new JobcoinClient(config)
-     client.testGet().map(response => println(s"Response:\n$response"))
+    val client = new JobcoinClient(config)
+    val mixerActor = actorSystem.actorOf(Props(new MixerActor(client, config)), "mixer")
 
     try {
       while (true) {
@@ -34,6 +33,7 @@ object JobcoinMixer {
         } else {
           val depositAddress = UUID.randomUUID()
           println(s"You may now send Jobcoins to address $depositAddress. They will be mixed and sent to your destination addresses.")
+          mixerActor ! AccountAssociation(depositAddress.toString, addresses)
         }
       }
     } catch {
