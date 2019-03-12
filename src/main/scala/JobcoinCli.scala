@@ -33,7 +33,9 @@ object JobcoinCli {
         } else {
           val depositAddress = UUID.randomUUID()
           println(s"You may now send Jobcoins to address $depositAddress. They will be mixed and sent to your destination addresses.")
-          mixerActor ! AccountAssociation(depositAddress.toString, addresses)
+          //mixerActor ! AccountAssociation(depositAddress.toString, addresses)
+          // hard code deposit account for debugging
+          mixerActor ! AccountAssociation("test-deposit", addresses)
         }
       }
     } catch {
