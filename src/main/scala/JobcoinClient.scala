@@ -16,7 +16,6 @@ import scala.concurrent.Future
 import DefaultBodyReadables._
 import scala.concurrent.ExecutionContext.Implicits._
 
-
 class JobcoinClient(config: Config)(implicit materializer: Materializer) {
   import JobcoinClient._
   import Transaction.jsonWrites.writes
@@ -31,8 +30,8 @@ class JobcoinClient(config: Config)(implicit materializer: Materializer) {
         .url(s"$apiAddressesUrl/$addr")
         .get()
     }.body[JsValue]
-     .validate[AddressesResponse]
-     .get
+      .validate[AddressesResponse]
+      .get
 
     BigDecimal(response.balance)
   }
@@ -56,7 +55,12 @@ class JobcoinClient(config: Config)(implicit materializer: Materializer) {
 
 object JobcoinClient {
   case class AddressesResponse(balance: String, transactions: Array[TimestampedTransaction])
-  case class TimestampedTransaction(timestamp: String, fromAddress: Option[String], toAddress: String, amount: String)
+  case class TimestampedTransaction(
+      timestamp: String,
+      fromAddress: Option[String],
+      toAddress: String,
+      amount: String
+  )
   case class Transaction(fromAddress: String, toAddress: String, amount: BigDecimal)
   object AddressesResponse {
     implicit val jsonReads: Reads[AddressesResponse] = Json.reads[AddressesResponse]

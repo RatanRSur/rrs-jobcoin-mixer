@@ -12,7 +12,10 @@ object MixerActor {
   case object Payout
 }
 
-class MixerActor(val client: JobcoinClient, config: Config) extends Actor with Timers with ActorLogging {
+class MixerActor(val client: JobcoinClient, config: Config)
+    extends Actor
+    with Timers
+    with ActorLogging {
   log.debug("Starting Mixer Actor")
   import JobcoinClient._
   import MixerActor._
@@ -55,10 +58,11 @@ class MixerActor(val client: JobcoinClient, config: Config) extends Actor with T
       assume(payoutsRemaining(userAccount) >= 0)
     }
     case Payout => {
-      accountAssociations.foreach { case (addr, dests) =>
-        val numberOfShares = dests.size
-        val payOutPerShare = payoutsRemaining.getOrElse(addr, BigDecimal(0)) / numberOfShares
-        dests.foreach( dest => client.transfer(poolAddress, dest, payOutPerShare).pipeTo(self))
+      accountAssociations.foreach {
+        case (addr, dests) =>
+          val numberOfShares = dests.size
+          val payOutPerShare = payoutsRemaining.getOrElse(addr, BigDecimal(0)) / numberOfShares
+          dests.foreach(dest => client.transfer(poolAddress, dest, payOutPerShare).pipeTo(self))
       }
     }
   }

@@ -23,14 +23,16 @@ object JobcoinCli {
     try {
       while (true) {
         println(prompt)
-        val line = Option(StdIn.readLine()).filter( _ != "quit").getOrElse(throw CompletedException)
+        val line = Option(StdIn.readLine()).filter(_ != "quit").getOrElse(throw CompletedException)
 
         val addresses = line.split(",")
         if (line == "") {
           println(s"You must specify empty addresses to mix into!\n$helpText")
         } else {
           val depositAddress = UUID.randomUUID()
-          println(s"You may now send Jobcoins to address $depositAddress. They will be mixed and sent to your destination addresses.")
+          println(
+            s"You may now send Jobcoins to address $depositAddress. They will be mixed and sent to your destination addresses."
+          )
           //mixerActor ! AccountAssociation(depositAddress.toString, addresses)
           // hard code deposit account for debugging
           mixerActor ! AccountAssociation("test-deposit", addresses)
@@ -43,7 +45,8 @@ object JobcoinCli {
     }
   }
 
-  val prompt: String = "Please enter a comma-separated list of new, unused Jobcoin addresses where your mixed Jobcoins will be sent."
+  val prompt: String =
+    "Please enter a comma-separated list of new, unused Jobcoin addresses where your mixed Jobcoins will be sent."
   val helpText: String =
     """
       |Jobcoin Mixer
