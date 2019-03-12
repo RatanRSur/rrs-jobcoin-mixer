@@ -55,7 +55,6 @@ object JobcoinClient {
   case class AddressesResponse(balance: String, transactions: Array[TimestampedTransaction])
   case class TimestampedTransaction(timestamp: String, fromAddress: Option[String], toAddress: String, amount: String)
   case class Transaction(fromAddress: String, toAddress: String, amount: String)
-  case class TransactionSucceeded(status: String)
   object AddressesResponse {
     implicit val jsonReads: Reads[AddressesResponse] = Json.reads[AddressesResponse]
   }
@@ -64,8 +63,5 @@ object JobcoinClient {
   }
   object Transaction {
     implicit val jsonWrites: Writes[Transaction] = Json.format[Transaction]
-  }
-  object TransactionSucceeded {
-    implicit val jsonReads: Reads[TransactionSucceeded] = Json.reads[TransactionSucceeded]
   }
 }
