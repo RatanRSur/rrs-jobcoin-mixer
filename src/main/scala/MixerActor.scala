@@ -38,9 +38,8 @@ class MixerActor(val client: JobcoinClient, config: Config) extends Actor with T
       }
     }
     case BalanceUpdate(addr, amount) => {
-      println(s"$addr received deposit of $amount")
       if (amount > 0) {
-        log.debug(s"$addr received deposit of $amount, transferring to pool")
+        log.debug(s"$addr received deposit of $amount, transferring to $poolAddress")
         client.transfer(addr, poolAddress, amount).pipeTo(self)
       }
     }
