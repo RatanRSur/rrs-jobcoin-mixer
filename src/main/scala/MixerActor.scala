@@ -8,7 +8,7 @@ import scala.concurrent.ExecutionContext
 object MixerActor {
   case class AccountAssociation(depositAddress: String, destinationAddresses: Array[String])
   case class Deposited(depositAddress: String, amount: BigDecimal)
-  case object PollDepositAddresses
+  case object SpillDepositAddresses
   case object Payout
 }
 
@@ -26,9 +26,9 @@ class MixerActor(val client: JobcoinClient, config: Config)
   var accountAssociations = Map.empty[String, Array[String]]
   var payoutsRemaining = Map.empty[String, BigDecimal]
 
-  log.debug("Starting Deposit Address Polling")
-  var addressesBeingPolled = Set.empty[String]
-  timers.startPeriodicTimer("polling", PollDepositAddresses, 1.seconds)
+  log.debug("Starting Deposit Address Spilling")
+  var addressesBeingSpilled = Set.empty[String]
+  timers.startPeriodicTimer("spilling", SpillDepositAddresses, 1.seconds)
   timers.startPeriodicTimer("paying out", Payout, 2.seconds)
 
   def receive = {
@@ -36,11 +36,11 @@ class MixerActor(val client: JobcoinClient, config: Config)
       log.debug(s"Received association $deposit -> ${dests.mkString(",")}")
       accountAssociations += (deposit -> dests)
     }
-    case PollDepositAddresses => {
+    case SpillDepositAddresses => {
       accountAssociations.keys.foreach { addr =>
         log.debug(s"Beginning transfer from $addr to $poolAddress")
-        if (!addressesBeingPolled.contains(addr)) {
-          addressesBeingPolled += addr
+        if (!addressesBeingSpilled.contains(addr)) {
+          addressesBeingSpilled += addr
           client.transferAll(addr, poolAddress).pipeTo(self)
         }
       }
@@ -50,7 +50,7 @@ class MixerActor(val client: JobcoinClient, config: Config)
       val (userAccount, signedAmount) = if (from == poolAddress) {
         (to, -amount)
       } else {
-        addressesBeingPolled -= from
+        addressesBeingSpilled -= from
         (from, amount)
       }
       payoutsRemaining += (userAccount ->
