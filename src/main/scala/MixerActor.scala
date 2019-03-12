@@ -9,12 +9,12 @@ object MixerActor {
   case class AccountAssociation(depositAddress: String, destinationAddresses: Array[String])
   case class Deposited(depositAddress: String, amount: BigDecimal)
   case object PollDepositAddresses
-  case class BalanceUpdate(address: String, amount: BigDecimal)
-  case class PayoutUpdate(address: String, amount: BigDecimal)
+  case object Payout
 }
 
 class MixerActor(val client: JobcoinClient, config: Config) extends Actor with Timers with ActorLogging {
   log.debug("Starting Mixer Actor")
+  import JobcoinClient._
   import MixerActor._
   import akka.pattern.pipe
   implicit val ec: ExecutionContext = context.dispatcher
@@ -25,6 +25,7 @@ class MixerActor(val client: JobcoinClient, config: Config) extends Actor with T
 
   log.debug("Starting Deposit Address Polling")
   timers.startPeriodicTimer("polling", PollDepositAddresses, 1.seconds)
+  timers.startPeriodicTimer("paying out", Payout, 2.seconds)
 
   def receive = {
     case AccountAssociation(deposit, dests) => {
@@ -33,20 +34,27 @@ class MixerActor(val client: JobcoinClient, config: Config) extends Actor with T
     }
     case PollDepositAddresses => {
       accountAssociations.keys.foreach { addr =>
-        log.debug(s"Getting balance for $addr")
-        client.getBalance(addr.toString).pipeTo(self)
+        log.debug(s"Beginning transfer from $addr to $poolAddress")
+        client.transferAll(addr, poolAddress).pipeTo(self)
       }
     }
-    case BalanceUpdate(addr, amount) => {
-      if (amount > 0) {
-        log.debug(s"$addr received deposit of $amount, transferring to $poolAddress")
-        client.transfer(addr, poolAddress, amount).pipeTo(self)
+    case Transaction(from, to, amount) => {
+      log.debug(s"confirmed: $from to $to for $amount")
+      val (userAccount, signedAmount) = if (from == poolAddress) {
+        (to, -amount)
+      } else {
+        (from, amount)
       }
+      payoutsRemaining += (userAccount ->
+        (payoutsRemaining.getOrElse(userAccount, BigDecimal(0)) + signedAmount))
+      assume(payoutsRemaining(userAccount) >= 0)
     }
-    case PayoutUpdate(from, amount) => {
-      val currentPayout = payoutsRemaining.getOrElse(from, BigDecimal(0))
-      payoutsRemaining = payoutsRemaining.updated(from, currentPayout + amount)
-      log.debug(s"payout update for $from, was $currentPayout, now ${payoutsRemaining(from)}")
+    case Payout => {
+      accountAssociations.foreach { case (addr, dests) =>
+        val numberOfShares = dests.size
+        val payOutPerShare = payoutsRemaining.getOrElse(addr, BigDecimal(0)) / numberOfShares
+        dests.foreach( dest => client.transfer(poolAddress, dest, payOutPerShare).pipeTo(self))
+      }
     }
   }
 }

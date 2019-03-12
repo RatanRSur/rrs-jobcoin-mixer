@@ -18,7 +18,6 @@ import scala.concurrent.ExecutionContext.Implicits._
 
 
 class JobcoinClient(config: Config)(implicit materializer: Materializer) {
-  import MixerActor._
   import JobcoinClient._
   import Transaction.jsonWrites.writes
 
@@ -26,7 +25,7 @@ class JobcoinClient(config: Config)(implicit materializer: Materializer) {
   private val apiAddressesUrl = config.getString("jobcoin.apiAddressesUrl")
   private val apiTransactionsUrl = config.getString("jobcoin.apiTransactionsUrl")
 
-  def getBalance(addr: String): Future[BalanceUpdate] = async {
+  def getBalance(addr: String): Future[BigDecimal] = async {
     val response = await {
       wsClient
         .url(s"$apiAddressesUrl/$addr")
@@ -35,26 +34,30 @@ class JobcoinClient(config: Config)(implicit materializer: Materializer) {
      .validate[AddressesResponse]
      .get
 
-    BalanceUpdate(addr, BigDecimal(response.balance))
+    BigDecimal(response.balance)
   }
 
-  def transfer(from: String, to: String, amount: BigDecimal): Future[PayoutUpdate] = async {
+  def transfer(from: String, to: String, amount: BigDecimal): Future[Transaction] = async {
     val transactionSucceeded = await {
       wsClient
         .url(apiTransactionsUrl)
-        .post(writes(Transaction(from, to, amount.toString)))
+        .post(writes(Transaction(from, to, amount)))
     }.status == 200
 
-    if (transactionSucceeded) PayoutUpdate(from, amount) else await(transfer(from, to, amount))
+    if (transactionSucceeded) Transaction(from, to, amount) else await(transfer(from, to, amount))
   }
 
+  def transferAll(from: String, to: String): Future[Transaction] = async {
+    val balance = await(getBalance(from))
+    await(transfer(from, to, balance))
+  }
 
 }
 
 object JobcoinClient {
   case class AddressesResponse(balance: String, transactions: Array[TimestampedTransaction])
   case class TimestampedTransaction(timestamp: String, fromAddress: Option[String], toAddress: String, amount: String)
-  case class Transaction(fromAddress: String, toAddress: String, amount: String)
+  case class Transaction(fromAddress: String, toAddress: String, amount: BigDecimal)
   object AddressesResponse {
     implicit val jsonReads: Reads[AddressesResponse] = Json.reads[AddressesResponse]
   }
