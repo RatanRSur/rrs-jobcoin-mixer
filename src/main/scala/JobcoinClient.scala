@@ -24,6 +24,7 @@ class JobcoinClient(config: Config)(implicit materializer: Materializer) {
 
   private val wsClient = StandaloneAhcWSClient()
   private val apiAddressesUrl = config.getString("jobcoin.apiAddressesUrl")
+  private val apiTransactionsUrl = config.getString("jobcoin.apiTransactionsUrl")
 
   def getBalance(addr: String): Future[BalanceUpdate] = async {
     val response = await {
@@ -40,16 +41,11 @@ class JobcoinClient(config: Config)(implicit materializer: Materializer) {
   def transfer(from: String, to: String, amount: BigDecimal): Future[PayoutUpdate] = async {
     val transactionSucceeded = await {
       wsClient
-        .url(s"$apiAddressesUrl/transactions")
+        .url(apiTransactionsUrl)
         .post(writes(Transaction(from, to, amount.toString)))
-    }.body[JsValue]
-      .validate[TransactionSucceeded]
-      .isSuccess
+    }.status == 200
 
-    if (!transactionSucceeded) {
-      throw new Exception("Insufficient funds")
-    }
-    PayoutUpdate(from, amount)
+    if (transactionSucceeded) PayoutUpdate(from, amount) else await(transfer(from, to, amount))
   }
 
 
@@ -57,7 +53,7 @@ class JobcoinClient(config: Config)(implicit materializer: Materializer) {
 
 object JobcoinClient {
   case class AddressesResponse(balance: String, transactions: Array[TimestampedTransaction])
-  case class TimestampedTransaction(timestamp: String, from: Option[String], to: String, amount: String)
+  case class TimestampedTransaction(timestamp: String, fromAddress: Option[String], toAddress: String, amount: String)
   case class Transaction(from: String, to: String, amount: String)
   case class TransactionSucceeded(status: String)
   object AddressesResponse {
