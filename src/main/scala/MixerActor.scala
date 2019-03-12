@@ -24,6 +24,7 @@ class MixerActor(val client: JobcoinClient, config: Config) extends Actor with T
   var payoutsRemaining = Map.empty[String, BigDecimal]
 
   log.debug("Starting Deposit Address Polling")
+  var addressesBeingPolled = Set.empty[String]
   timers.startPeriodicTimer("polling", PollDepositAddresses, 1.seconds)
   timers.startPeriodicTimer("paying out", Payout, 2.seconds)
 
@@ -35,7 +36,10 @@ class MixerActor(val client: JobcoinClient, config: Config) extends Actor with T
     case PollDepositAddresses => {
       accountAssociations.keys.foreach { addr =>
         log.debug(s"Beginning transfer from $addr to $poolAddress")
-        client.transferAll(addr, poolAddress).pipeTo(self)
+        if (!addressesBeingPolled.contains(addr)) {
+          addressesBeingPolled += addr
+          client.transferAll(addr, poolAddress).pipeTo(self)
+        }
       }
     }
     case Transaction(from, to, amount) => {
@@ -43,6 +47,7 @@ class MixerActor(val client: JobcoinClient, config: Config) extends Actor with T
       val (userAccount, signedAmount) = if (from == poolAddress) {
         (to, -amount)
       } else {
+        addressesBeingPolled -= from
         (from, amount)
       }
       payoutsRemaining += (userAccount ->
