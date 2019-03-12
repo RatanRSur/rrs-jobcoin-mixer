@@ -26,3 +26,6 @@ scalacOptions ++= Seq(
   "-unchecked",
   "-Xlint:_"
 )
+
+connectInput in run := true
+

@@ -23,9 +23,7 @@ object JobcoinCli {
     try {
       while (true) {
         println(prompt)
-        val line = StdIn.readLine()
-
-        if (line == "quit") throw CompletedException
+        val line = Option(StdIn.readLine()).filter( _ != "quit").getOrElse(throw CompletedException)
 
         val addresses = line.split(",")
         if (line == "") {
