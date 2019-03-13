@@ -2,13 +2,24 @@
 
 set -e
 
-destination_accounts=`shuf /usr/share/dict/words | rg -v "'" | head -4`
+small_random() {
+    str=$(echo $RANDOM)
+    maybe_zero="${str: -1}"
+    echo $(($maybe_zero + 1))
+}
+
+number_of_accounts=$(small_random)
+
+destination_accounts=$(shuf /usr/share/dict/words | rg -v "'" | head -$(small_random))
 input=$(echo $destination_accounts | tr ' ' ',')
 
+number_of_deposits=$(small_random)
 
 (echo $input;
-sleep 5;
-curl -k -s http://jobcoin.gemini.com/phosphate/create -H 'Content-Type: application/json' -d "{\"address\": \"test-deposit\"}";
+for i in $(seq $number_of_deposits); do
+    sleep 5;
+    curl -k -s http://jobcoin.gemini.com/phosphate/create -H 'Content-Type: application/json' -d "{\"address\": \"test-deposit\"}";
+done;
 sleep 20) | sbt run
 
 for acc in $destination_accounts; do
