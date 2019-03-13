@@ -38,13 +38,14 @@ class MixerActor(val client: JobcoinClient, config: Config)
     }
     case SpillDepositAddresses => {
       accountAssociations.keys.foreach { addr =>
-        log.debug(s"Beginning transfer from $addr to $poolAddress")
         if (!addressesBeingSpilled.contains(addr)) {
+          log.debug(s"Beginning transfer from $addr to $poolAddress")
           addressesBeingSpilled += addr
           client.transferAll(addr, poolAddress).pipeTo(self)
         }
       }
     }
+    // This message is received when the client confirms that a transaction went through
     case Transaction(from, to, amount) => {
       log.debug(s"confirmed: $from to $to for $amount")
       val (userAccount, signedAmount) = if (from == poolAddress) {
