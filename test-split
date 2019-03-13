@@ -4,9 +4,13 @@ set -e
 
 destination_accounts=`shuf /usr/share/dict/words | rg -v "'" | head -4`
 input=$(echo $destination_accounts | tr ' ' ',')
-curl -k -s http://jobcoin.gemini.com/phosphate/create -H 'Content-Type: application/json' -d "{\"address\": \"test-deposit\"}"
 
-(echo $input; sleep 20) | sbt run
+
+(echo $input;
+sleep 5;
+curl -k -s http://jobcoin.gemini.com/phosphate/create -H 'Content-Type: application/json' -d "{\"address\": \"test-deposit\"}";
+sleep 20) | sbt run
+
 for acc in $destination_accounts; do
     echo $acc
     curl -k -s http://jobcoin.gemini.com/phosphate/api/addresses/$acc | jq
