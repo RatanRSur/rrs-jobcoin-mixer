@@ -59,11 +59,15 @@ class MixerActor(val client: JobcoinClient, config: Config)
       assume(payoutsRemaining(userAccount) >= 0)
     }
     case Payout => {
+      val payoutAtom = 10 // how much to pay every account every epoch
       accountAssociations.foreach {
         case (addr, dests) =>
-          val numberOfShares = dests.size
-          val payOutPerShare = payoutsRemaining.getOrElse(addr, BigDecimal(0)) / numberOfShares
-          dests.foreach(dest => client.transfer(poolAddress, dest, payOutPerShare).pipeTo(self))
+          val payoutRemaining = payoutsRemaining.getOrElse(addr, BigDecimal(0))
+          val maxNumberOfAccountsToPayTo = (payoutRemaining / payoutAtom).toInt
+          val accountsToPayTo = dests.take(maxNumberOfAccountsToPayTo)
+          accountsToPayTo.foreach { dest =>
+            client.transfer(poolAddress, dest, payoutAtom).pipeTo(self)
+          }
       }
     }
   }
