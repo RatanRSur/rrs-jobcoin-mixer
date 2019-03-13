@@ -62,7 +62,7 @@ class MixerActor(val client: JobcoinClient, config: Config)
       )
     }
     case Payout => {
-      val payoutAtom = 10 // how much to pay every account every epoch
+      val payoutAtom = config.getInt("jobcoin.payoutAtom") // how much to pay every account every epoch
       sourceToDestMap.foreach {
         case (addr, dests) =>
           val payoutRemaining = payoutsRemaining.getOrElse(addr, BigDecimal(0))
