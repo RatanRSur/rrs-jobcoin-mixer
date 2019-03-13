@@ -12,14 +12,16 @@ curl -k -s http://jobcoin.gemini.com/phosphate/create -H 'Content-Type: applicat
 sleep 20) | sbt run
 
 for acc in $destination_accounts; do
-    echo $acc
-    curl -k -s http://jobcoin.gemini.com/phosphate/api/addresses/$acc | jq
+    echo -n "$acc: "
+    curl -k -s http://jobcoin.gemini.com/phosphate/api/addresses/$acc | jq .balance
 done
 
 echo "Emptying test deposit addr and pool..."
 for acc in test-deposit test-pool; do
+    echo -n "$acc: "
     balance=$(curl -k -s http://jobcoin.gemini.com/phosphate/api/addresses/$acc | jq .balance)
     transfer_body="{ \"fromAddress\": \"$acc\", \"toAddress\": \"void\", \"amount\" : $balance }"
-    curl -k -s http://jobcoin.gemini.com/phosphate/api/transactions -H 'Content-Type: application/json' --data "$transfer_body" | jq
+    curl -k -s http://jobcoin.gemini.com/phosphate/api/transactions -H 'Content-Type: application/json' --data "$transfer_body" > /dev/null
+    curl -k -s http://jobcoin.gemini.com/phosphate/api/addresses/$acc | jq .balance
 done
 
