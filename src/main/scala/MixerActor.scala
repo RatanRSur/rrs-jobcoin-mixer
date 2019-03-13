@@ -29,7 +29,7 @@ class MixerActor(val client: JobcoinClient, config: Config)
 
   log.debug("Starting Deposit Address Spilling")
   timers.startPeriodicTimer("spilling", SpillDepositAddresses, 1.seconds)
-  timers.startPeriodicTimer("paying out", Payout, 2.seconds)
+  timers.startPeriodicTimer("paying out", Payout, 3.seconds)
 
   def receive = {
     case AccountAssociation(deposit, dests) => {
