@@ -23,7 +23,8 @@ class MixerActor(val client: JobcoinClient, config: Config)
   implicit val ec: ExecutionContext = context.dispatcher
 
   val poolAddress = config.getString("jobcoin.poolAddress")
-  var accountAssociations = Map.empty[String, Set[String]]
+  var sourceToDestAssociation = Map.empty[String, Set[String]]
+  var destToSourceAssociation = Map.empty[String, String]
   var payoutsRemaining = Map.empty[String, BigDecimal]
 
   log.debug("Starting Deposit Address Spilling")
@@ -34,10 +35,11 @@ class MixerActor(val client: JobcoinClient, config: Config)
   def receive = {
     case AccountAssociation(deposit, dests) => {
       log.debug(s"Received association $deposit -> ${dests.mkString(",")}")
-      accountAssociations += (deposit -> dests)
+      sourceToDestAssociation += (deposit -> dests)
+      destToSourceAssociation ++= dests.map(dest => (dest -> deposit))
     }
     case SpillDepositAddresses => {
-      accountAssociations.keys.foreach { addr =>
+      sourceToDestAssociation.keys.foreach { addr =>
         if (!addressesBeingSpilled.contains(addr)) {
           log.debug(s"Beginning transfer from $addr to $poolAddress")
           addressesBeingSpilled += addr
@@ -49,14 +51,16 @@ class MixerActor(val client: JobcoinClient, config: Config)
     case Transaction(from, to, amount) => {
       log.debug(s"confirmed: $from to $to for $amount")
       val (userAccount, signedAmount) = if (from == poolAddress) {
-        (to, -amount)
+        (destToSourceAssociation(to), -amount)
       } else {
         addressesBeingSpilled -= from
         (from, amount)
       }
-      payoutsRemaining += (userAccount ->
-        (payoutsRemaining.getOrElse(userAccount, BigDecimal(0)) + signedAmount))
-      assume(payoutsRemaining(userAccount) >= 0)
+      payoutsRemaining += (userAccount -> (payoutsRemaining.getOrElse(userAccount, BigDecimal(0)) + signedAmount))
+      assume(
+        payoutsRemaining(userAccount) >= 0,
+        s"$userAccount has invalid payout: ${payoutsRemaining(userAccount)}"
+      )
     }
     case Payout => {
       val payoutAtom = 10 // how much to pay every account every epoch
