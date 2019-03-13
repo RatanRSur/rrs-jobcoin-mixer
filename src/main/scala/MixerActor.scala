@@ -23,8 +23,8 @@ class MixerActor(val client: JobcoinClient, config: Config)
   implicit val ec: ExecutionContext = context.dispatcher
 
   val poolAddress = config.getString("jobcoin.poolAddress")
-  var sourceToDestAssociation = Map.empty[String, Set[String]]
-  var destToSourceAssociation = Map.empty[String, String]
+  var sourceToDestMap = Map.empty[String, Set[String]]
+  var destToSourceMap = Map.empty[String, String]
   var payoutsRemaining = Map.empty[String, BigDecimal]
 
   log.debug("Starting Deposit Address Spilling")
@@ -35,11 +35,11 @@ class MixerActor(val client: JobcoinClient, config: Config)
   def receive = {
     case AccountAssociation(deposit, dests) => {
       log.debug(s"Received association $deposit -> ${dests.mkString(",")}")
-      sourceToDestAssociation += (deposit -> dests)
-      destToSourceAssociation ++= dests.map(dest => (dest -> deposit))
+      sourceToDestMap += (deposit -> dests)
+      destToSourceMap ++= dests.map(dest => (dest -> deposit))
     }
     case SpillDepositAddresses => {
-      sourceToDestAssociation.keys.foreach { addr =>
+      sourceToDestMap.keys.foreach { addr =>
         if (!addressesBeingSpilled.contains(addr)) {
           log.debug(s"Beginning transfer from $addr to $poolAddress")
           addressesBeingSpilled += addr
@@ -51,7 +51,7 @@ class MixerActor(val client: JobcoinClient, config: Config)
     case Transaction(from, to, amount) => {
       log.debug(s"confirmed: $from to $to for $amount")
       val (userAccount, signedAmount) = if (from == poolAddress) {
-        (destToSourceAssociation(to), -amount)
+        (destToSourceMap(to), -amount)
       } else {
         addressesBeingSpilled -= from
         (from, amount)
@@ -64,7 +64,7 @@ class MixerActor(val client: JobcoinClient, config: Config)
     }
     case Payout => {
       val payoutAtom = 10 // how much to pay every account every epoch
-      accountAssociations.foreach {
+      sourceToDestMap.foreach {
         case (addr, dests) =>
           val payoutRemaining = payoutsRemaining.getOrElse(addr, BigDecimal(0))
           val maxNumberOfAccountsToPayTo = (payoutRemaining / payoutAtom).toInt
