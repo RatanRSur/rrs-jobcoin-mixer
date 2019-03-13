@@ -28,7 +28,6 @@ class MixerActor(val client: JobcoinClient, config: Config)
   var payoutsRemaining = Map.empty[String, BigDecimal]
 
   log.debug("Starting Deposit Address Spilling")
-  var addressesBeingSpilled = Set.empty[String]
   timers.startPeriodicTimer("spilling", SpillDepositAddresses, 1.seconds)
   timers.startPeriodicTimer("paying out", Payout, 2.seconds)
 
@@ -40,11 +39,7 @@ class MixerActor(val client: JobcoinClient, config: Config)
     }
     case SpillDepositAddresses => {
       sourceToDestMap.keys.foreach { addr =>
-        if (!addressesBeingSpilled.contains(addr)) {
-          log.debug(s"Beginning transfer from $addr to $poolAddress")
-          addressesBeingSpilled += addr
-          client.transferAll(addr, poolAddress).pipeTo(self)
-        }
+        client.transferAll(addr, poolAddress).pipeTo(self)
       }
     }
     // This message is received when the client confirms that a transaction went through
@@ -55,7 +50,6 @@ class MixerActor(val client: JobcoinClient, config: Config)
         (destToSourceMap(to), -amount)
       } else {
         // from is the original address so we increase the remaining payout
-        addressesBeingSpilled -= from
         (from, amount)
       }
       payoutsRemaining += (userAccount -> (payoutsRemaining.getOrElse(userAccount, BigDecimal(0)) + signedAmount))
