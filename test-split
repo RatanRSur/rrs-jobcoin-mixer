@@ -2,6 +2,8 @@
 
 set -e
 
+echo "This script assumes a deposit address hardcoded as test-deposit"
+
 small_random() {
     str=$(echo $RANDOM)
     maybe_zero="${str: -1}"
