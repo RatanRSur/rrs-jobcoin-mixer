@@ -33,9 +33,9 @@ object JobcoinCli {
           println(
             s"You may now send Jobcoins to address $depositAddress. They will be mixed and sent to your destination addresses."
           )
-          //mixerActor ! AccountAssociation(depositAddress.toString, addresses)
-          // hard code deposit account for debugging
-          mixerActor ! AccountAssociation("test-deposit", addresses.toSet)
+          mixerActor ! AccountAssociation(depositAddress.toString, addresses.toSet)
+          // hard coded deposit account for debugging script
+          // mixerActor ! AccountAssociation("test-deposit", addresses.toSet)
         }
       }
     } catch {
