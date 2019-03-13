@@ -51,8 +51,10 @@ class MixerActor(val client: JobcoinClient, config: Config)
     case Transaction(from, to, amount) => {
       log.debug(s"confirmed: $from to $to for $amount")
       val (userAccount, signedAmount) = if (from == poolAddress) {
+        // get the original address this came from and reduce the remaining payout
         (destToSourceMap(to), -amount)
       } else {
+        // from is the original address so we increase the remaining payout
         addressesBeingSpilled -= from
         (from, amount)
       }
