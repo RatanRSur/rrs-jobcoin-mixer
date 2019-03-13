@@ -45,17 +45,20 @@ class MixerActor(val client: JobcoinClient, config: Config)
     // This message is received when the client confirms that a transaction went through
     case Transaction(from, to, amount) => {
       log.debug(s"confirmed: $from to $to for $amount")
-      val (userAccount, signedAmount) = if (from == poolAddress) {
+      val (userSourceAddr, signedAmount) = if (from == poolAddress) {
         // get the original address this came from and reduce the remaining payout
         (destToSourceMap(to), -amount)
       } else {
         // from is the original address so we increase the remaining payout
         (from, amount)
       }
-      payoutsRemaining += (userAccount -> (payoutsRemaining.getOrElse(userAccount, BigDecimal(0)) + signedAmount))
+      payoutsRemaining += (userSourceAddr -> (payoutsRemaining.getOrElse(
+        userSourceAddr,
+        BigDecimal(0)
+      ) + signedAmount))
       assume(
-        payoutsRemaining(userAccount) >= 0,
-        s"$userAccount has invalid payout: ${payoutsRemaining(userAccount)}"
+        payoutsRemaining(userSourceAddr) >= 0,
+        s"$userSourceAddr has invalid payout: ${payoutsRemaining(userSourceAddr)}"
       )
     }
     case Payout => {
