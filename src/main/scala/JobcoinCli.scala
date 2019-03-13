@@ -35,7 +35,7 @@ object JobcoinCli {
           )
           //mixerActor ! AccountAssociation(depositAddress.toString, addresses)
           // hard code deposit account for debugging
-          mixerActor ! AccountAssociation("test-deposit", addresses)
+          mixerActor ! AccountAssociation("test-deposit", addresses.toSet)
         }
       }
     } catch {

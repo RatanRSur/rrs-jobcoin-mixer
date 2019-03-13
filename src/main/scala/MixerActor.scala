@@ -6,7 +6,7 @@ import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 
 object MixerActor {
-  case class AccountAssociation(depositAddress: String, destinationAddresses: Array[String])
+  case class AccountAssociation(depositAddress: String, destinationAddresses: Set[String])
   case class Deposited(depositAddress: String, amount: BigDecimal)
   case object SpillDepositAddresses
   case object Payout
@@ -23,7 +23,7 @@ class MixerActor(val client: JobcoinClient, config: Config)
   implicit val ec: ExecutionContext = context.dispatcher
 
   val poolAddress = config.getString("jobcoin.poolAddress")
-  var accountAssociations = Map.empty[String, Array[String]]
+  var accountAssociations = Map.empty[String, Set[String]]
   var payoutsRemaining = Map.empty[String, BigDecimal]
 
   log.debug("Starting Deposit Address Spilling")
